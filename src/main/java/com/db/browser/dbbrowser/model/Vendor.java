@@ -21,7 +21,7 @@ public class Vendor implements Serializable {
     private long id;
 
     @Column(name="VENDOR_NAME")
-    private String vendorName;
+    private String name;
 
     @Column(name="VERSION")
     private String version;

@@ -16,6 +16,6 @@ public interface ConnectionRepository extends JpaRepository<Connection, Long> {
 
     Optional<Connection> findByName(String name);
 
-    @Query("SELECT c FROM Connection c WHERE c.vendor.vendorName=:name AND c.vendor.version=:version")
+    @Query("SELECT c FROM Connection c WHERE c.vendor.name=:name AND c.vendor.version=:version")
     List<Connection> findConnectionsByVendorNameAndVendorVersion(String name, String version);
 }

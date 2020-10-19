@@ -43,13 +43,8 @@ public class Connection  implements Serializable {
     @Column(name="URL")
     private String url;
 
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne(cascade = CascadeType.MERGE)
     @JoinColumn
     private Vendor vendor;
 
-    public void generateUrl() {
-            String connectionUrl = "jdbc:".concat(vendor.getVendorName()).concat("://").concat(this.hostname)
-            .concat(":").concat(String.valueOf(this.port)).concat("/").concat(this.dbName);
-            this.url = connectionUrl;
-    }
 }

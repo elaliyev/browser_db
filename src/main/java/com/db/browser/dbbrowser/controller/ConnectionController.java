@@ -3,9 +3,12 @@ package com.db.browser.dbbrowser.controller;
 import com.db.browser.dbbrowser.db.DBConnection;
 import com.db.browser.dbbrowser.exception.NotFoundException;
 import com.db.browser.dbbrowser.model.Connection;
+import com.db.browser.dbbrowser.model.Vendor;
 import com.db.browser.dbbrowser.service.ConnectionService;
 import com.db.browser.dbbrowser.service.VendorService;
 import com.db.browser.dbbrowser.util.ConnectionParam;
+import com.db.browser.dbbrowser.util.ConnectionRequest;
+import com.db.browser.dbbrowser.util.Mapper;
 import com.db.browser.dbbrowser.util.Result;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -18,7 +21,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping(path = "/connection",produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(path = "/connection", produces = MediaType.APPLICATION_JSON_VALUE)
 @Slf4j
 public class ConnectionController {
 
@@ -31,10 +34,15 @@ public class ConnectionController {
     }
 
     @PostMapping(value = "/save", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Connection> saveConnection(@RequestBody Connection connection) throws Exception {
+    public ResponseEntity<Connection> saveConnection(@RequestBody ConnectionRequest connectionRequest) throws Exception {
 
-        connection.generateUrl();
-
+        long vendorId = connectionRequest.getVendorId();
+        Vendor vendor = vendorService.save(vendorService.getVendorById(vendorId)
+                .orElseThrow(() -> new NotFoundException("Vendor not found. vendor id: ", vendorId)));
+        if (vendor == null) {
+            throw new Exception("there is a problem saving vendor");
+        }
+        Connection connection = Mapper.mapConnection(connectionRequest, vendor);
         Connection savedConnection = connectionService.save(connection);
         log.info("Connection saved {}", savedConnection);
         return new ResponseEntity<>(savedConnection, HttpStatus.CREATED);
@@ -44,18 +52,18 @@ public class ConnectionController {
     public ResponseEntity<Result> connect(@RequestBody ConnectionParam connection) throws SQLException {
 
         Connection existingConnection = connectionService.getConnectionByName(connection.getName())
-                .orElseThrow(()->new NotFoundException("NAME", connection.getName()));
+                .orElseThrow(() -> new NotFoundException("NAME", connection.getName()));
 
         DBConnection.init(existingConnection);
-        log.info("Connected to the {}",existingConnection.getDbName());
-        return new ResponseEntity<>(new Result(0,"connected to "+existingConnection.getDbName()), HttpStatus.OK);
+        log.info("Connected to the {}", existingConnection.getDbName());
+        return new ResponseEntity<>(new Result(0, "connected to " + existingConnection.getDbName()), HttpStatus.OK);
     }
 
     @GetMapping("/find-by-vendor/{name}/{version}")
     public ResponseEntity<List<Connection>> getConnectionsByVendorNameAndVersion(@PathVariable String name, @PathVariable String version) {
 
         List<Connection> connections = connectionService.getConnectionsByVendorNameAndVendorVersion(name, version);
-        return new ResponseEntity<>(connections,HttpStatus.OK);
+        return new ResponseEntity<>(connections, HttpStatus.OK);
     }
 
     @GetMapping("/find-by-name/{name}")
@@ -63,7 +71,7 @@ public class ConnectionController {
 
         log.info("getConnectionsByName method called. name: {}", name);
         return new ResponseEntity<>(connectionService.getConnectionByName(name)
-                .orElseThrow(()->new NotFoundException("NAME", name)), HttpStatus.OK);
+                .orElseThrow(() -> new NotFoundException("NAME", name)), HttpStatus.OK);
     }
 
     @GetMapping("/find-by-id/{id}")
@@ -78,7 +86,7 @@ public class ConnectionController {
 
         List<Connection> connections = connectionService.getAllConnections();
         log.info("all connections. size: {}", connections.size());
-        return new ResponseEntity<>(connections,HttpStatus.OK);
+        return new ResponseEntity<>(connections, HttpStatus.OK);
     }
 
     @PutMapping("/update/{id}")
@@ -107,9 +115,9 @@ public class ConnectionController {
     @DeleteMapping("/delete/{id}")
     public ResponseEntity deleteConnection(@PathVariable long id) {
 
-        log.info("deleteConnection is called. id:{}",id);
+        log.info("deleteConnection is called. id:{}", id);
         Connection connection = connectionService.getConnectionById(id)
-                .orElseThrow(() -> new NotFoundException("ID",id));
+                .orElseThrow(() -> new NotFoundException("ID", id));
 
         connectionService.remove(connection);
         return ResponseEntity.ok().build();
