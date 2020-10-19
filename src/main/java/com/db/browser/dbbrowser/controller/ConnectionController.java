@@ -6,6 +6,7 @@ import com.db.browser.dbbrowser.model.Connection;
 import com.db.browser.dbbrowser.service.ConnectionService;
 import com.db.browser.dbbrowser.service.VendorService;
 import com.db.browser.dbbrowser.util.ConnectionParam;
+import com.db.browser.dbbrowser.util.Result;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -40,14 +41,14 @@ public class ConnectionController {
     }
 
     @PostMapping(value = "/connect", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<String> connect(@RequestBody ConnectionParam connection) throws SQLException {
+    public ResponseEntity<Result> connect(@RequestBody ConnectionParam connection) throws SQLException {
 
         Connection existingConnection = connectionService.getConnectionByName(connection.getName())
                 .orElseThrow(()->new NotFoundException("NAME", connection.getName()));
 
         DBConnection.init(existingConnection);
         log.info("Connected to the {}",existingConnection.getDbName());
-        return new ResponseEntity<>("Connected to "+existingConnection.getDbName(), HttpStatus.OK);
+        return new ResponseEntity<>(new Result(0,"connected to "+existingConnection.getDbName()), HttpStatus.OK);
     }
 
     @GetMapping("/find-by-vendor/{name}/{version}")
